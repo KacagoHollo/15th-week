@@ -46,50 +46,65 @@ function App() {
         todo: todo,
       }, {
         headers: {
-          authorization: authUser + ':::' + authPass
+          authorization: localStorage.getItem("sessionId")
         }
       })
       alert("Todo added")
       setTodo('')
     } catch (err) {
-        alert('Oops... Something went wrong')
-    }
+        if (err.response.status === 401) {
+          
+          alert("Session ended")
+          return setSectionToAppear("login")
+        }
+      }
   }
 
   const login = async () => {
     try {
-      await http.post('http://localhost:4000/api/login', {
+     const response = await http.post('http://localhost:4000/api/login', {
       }, {
         headers: {
           authorization: authUser + ':::' + authPass
         }
       })
       setSectionToAppear('todos')
-      localStorage.setItem('user', authUser)
-      localStorage.setItem('password', authPass)
-     
+      localStorage.setItem('sessionId', response.data)
+      // localStorage.setItem('password', authPass)
+      
     } catch (err) {
-        alert('Wrong username or password')
+      alert('Wrong username or password')
     }
   }
-
-  const signOut = () => {
-    localStorage.removeItem('user', authUser)
-    localStorage.removeItem('password', authPass)
+  
+  const signOut = async () => {
+    try {
+      await http.delete('http://localhost:4000/api/logout', 
+      {
+      headers: {
+        authorization: localStorage.getItem("sessionId")
+        }
+       },
+       {},
+      )
+  } catch (err) {
+    console.log(err.response)
+  } finally {
+    // localStorage.removeItem('user', authUser)
+    // localStorage.removeItem('password', authPass)
+    localStorage.removeItem('sessionId')
     setAuthUser('')
     setAuthPass('')
     setSectionToAppear('login')
-  }
+    }
+  };
   
   useEffect(() => {
     
-    const user = localStorage.getItem('user')
-    const password = localStorage.getItem('password')
-    if (!user || !password) return
-    setAuthUser(user)
-    setAuthPass(password)
-    setSectionToAppear('todos')
-
+    const sessionId = localStorage.getItem('sessionId')
+    // const password = localStorage.getItem('password')
+    if (!sessionId) return;
+    setSectionToAppear('todos');
   }, [])
 
   return (
